@@ -47,6 +47,7 @@ h1 {
 
     display: grid;
     grid-template-rows: 8fr 2fr 3fr;
+    transition: box-shadow 0.1s ease-out;
 }
 
 .img {
