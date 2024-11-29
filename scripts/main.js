@@ -9,6 +9,18 @@ const player = document.querySelector('.player'),
         passed = document.querySelector('.passed'),
         dura = document.querySelector('.duration');
 
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const analyser = audioCtx.createAnalyser();
+const source = audioCtx.createMediaElementSource(audio);
+
+source.connect(analyser);
+analyser.connect(audioCtx.destination);
+
+// Настройки анализатора
+analyser.fftSize = 256;
+const bufferLength = analyser.frequencyBinCount;
+const dataArray = new Uint8Array(bufferLength);
+
 // названия песен
 const songs = [`Shawn Mendes Wonder`, 
                 `Justin Bieber Holy`,
@@ -19,6 +31,26 @@ const songs = [`Shawn Mendes Wonder`,
 
 // текущая песня
 let songIndex = 0;
+
+function updateShadow() {
+    analyser.getByteFrequencyData(dataArray); // Получить частотные данные
+
+    // Рассчитать среднюю громкость
+    const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+
+    // Перевести громкость в интенсивность тени
+    const shadowIntensity = Math.min(average / 2, 50); // Ограничить максимум
+
+    // Применить тень к элементу `.player`
+    player.style.boxShadow = `
+        ${shadowIntensity}px ${shadowIntensity}px ${shadowIntensity * 2}px var(--blue),
+        -${shadowIntensity / 2}px -${shadowIntensity / 2}px ${shadowIntensity}px var(--blue)
+    `;
+
+    // Продолжить анимацию
+    requestAnimationFrame(updateShadow);
+}
+
 
 function setDuration(aud) {
     let a;
@@ -53,7 +85,16 @@ loadSong(songs[songIndex]);
 function playPause(clicked_class) {
     if (clicked_class === 'play_pause') { 
         event.target.classList.add('pressed'); 
-        audio.play(); 
+        audio.play();
+
+        // Активируем аудиоконтекст
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        // Запускаем обновление тени
+        requestAnimationFrame(updateShadow);
+
     } else {
         event.target.classList.remove('pressed'); 
         audio.pause(); 
